@@ -27,7 +27,11 @@
             class="content"
             :class="{select: list[(row - 1) + (column-1) * rows].select}"
             @mouseup="up((row - 1) + (column-1) * rows)"
-          >{{column}}</div>
+          >
+            {{`${list[(row - 1) + (column-1) * rows].rowStart} / ${list[(row - 1) + (column-1) * rows].rowEnd}`}}
+            <br />
+            {{`${list[(row - 1) + (column-1) * rows].columnStart} / ${list[(row - 1) + (column-1) * rows].columnEnd}`}}
+          </div>
           <div class="right-handle" @mousedown="moveDown($event, row, column, 'column')"></div>
           <div class="bottom-handle" @mousedown="moveDown($event, row, column, 'row')"></div>
         </div>
@@ -67,12 +71,27 @@ export default {
   },
   computed: {
     canMerge() {
-      if (this.select.length > 1) {
-        return !(
-          this.select[0].show && this.select[this.select.length - 1].show
-        ); //有些情况不太对
+      if(this.select.length > 1){
+        console.log('2f');
+        const [first] = this.select;//
+        const last = this.select[this.select.length - 1];
+        let count = 0;
+        for (const iterator of this.select) {
+          const row = iterator.rowEnd - iterator.rowStart;
+          const column = iterator.columnEnd - iterator.columnStart;
+          if(iterator.show){
+            console.log(row, column);
+            if(column + row > 2){
+              count += column * row;
+            }else{
+              count++;
+            }
+          }
+        }
+        console.log('count', count);
+        return !(count == this.select.length);
       }
-      return 0;
+      return true;
     }
   },
   created() {
@@ -91,6 +110,9 @@ export default {
       }
       this.select = [];
       const { startIndex } = this;
+      if(index === startIndex){
+        return;
+      }
       const start = this.list[startIndex];
       const end = this.list[index];
       const minRow = Math.min(start.rowStart, end.rowStart);
@@ -102,12 +124,14 @@ export default {
       // 给选中的加背景色
       for (let i = minRow - 1; i < maxRow - 1; i++) {
         for (let j = minColumn - 1; j < maxColumn - 1; j++) {
-          this.list[j + i * this.rows].select = true;
-          this.select.push(this.list[j + i * this.rows]);
+          const el = this.list[j + i * this.rows];
+          el.select = true;
+          this.select.push(el);
         }
       }
     },
     merge() {
+      console.log('合并')
       // 除了第一个其他的都不显示了，用show 考虑拆分的情况，就是还原...
       const { select, mergeData } = this;
       for (const iterator of select) {
