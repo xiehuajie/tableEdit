@@ -130,9 +130,13 @@ export default {
       for (let i = start - 1; i < end - 1; ++i) {
         mergeWidth += this[`${state == "row" ? "height" : "width"}List`][i];
       }
+
       const listener = event => {
         const offset = event[`client${state == "row" ? "Y" : "X"}`] - startY;
-        const width = (mergeWidth + offset) / (end - start);
+        let width = (mergeWidth + offset) / (end - start);
+        if(width < 30){
+          width = 30;
+        }
         for (let i = start - 1; i < end - 1; ++i) {
           //this.$set(this.widthList, i, width);//响应式不即时
           this[`${state == "row" ? "height" : "width"}List`][i] = width;
