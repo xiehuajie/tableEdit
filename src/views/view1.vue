@@ -1,41 +1,49 @@
 <template>
   <div>
     <h1>单元格合并？</h1>
-    <button @click="merge" :disabled="canMerge" >合并</button>
-    <button @click="resize"  >改变宽高</button>
-    <button @click="addColumn"  >添加行</button>
-    <button @click="addRow"  >添加列</button>
-    <div class="grid" :style="{
-      gridTemplateColumns: columnWidth,
-      gridTemplateRows: rowHight,
-      }">
+    <button @click="merge" :disabled="canMerge">合并</button>
+    <!-- <button @click="resize"  >改变宽高</button> -->
+    <button @click="addColumn">添加行</button>
+    <button @click="addRow">添加列</button>
+    <div
+      class="grid"
+      style="grid-template-columns: 100px 100px 100px 100px 100px;
+    grid-template-rows: 100px 100px;"
+      ref="grid"
+    >
       <template v-for="column in columns">
         <div
           v-for="row in rows"
           :key="row + (column - 1) * rows"
-          @mousedown="down((row - 1) + (column-1) * rows)"
-          @mouseup="up((row - 1) + (column-1) * rows)"
           v-show="list[(row - 1) + (column-1) * rows].show"
+          @mousedown="down((row - 1) + (column-1) * rows)"
           :class="{select: list[(row - 1) + (column-1) * rows].select}"
           :style="{
             gridRow: `${list[(row - 1) + (column-1) * rows].rowStart} / ${list[(row - 1) + (column-1) * rows].rowEnd}`,
             gridColumn: `${list[(row - 1) + (column-1) * rows].columnStart} / ${list[(row - 1) + (column-1) * rows].columnEnd}`,
           }"
-        >{{`${row} / ${column} / ${(row - 1) + (column-1) * rows}`}}</div>
+        >
+          <div
+            class="content"
+            :class="{select: list[(row - 1) + (column-1) * rows].select}"
+            @mouseup="up((row - 1) + (column-1) * rows)"
+          >{{column}}</div>
+          <div class="right-handle" @mousedown="moveDown($event, row, column, 'column')"></div>
+          <div class="bottom-handle" @mousedown="moveDown($event, row, column, 'row')"></div>
+        </div>
       </template>
     </div>
   </div>
 </template>
 
 <script>
-
 export default {
   data() {
     const rows = 5;
     const columns = 2;
     const list = new Array(rows * columns);
-    for(let i = 0; i < rows; i++){
-      for(let j = 0; j < columns; j++){
+    for (let i = 0; i < rows; i++) {
+      for (let j = 0; j < columns; j++) {
         list[i + j * rows] = {
           rowStart: j + 1,
           rowEnd: j + 2,
@@ -43,45 +51,34 @@ export default {
           columnEnd: i + 2,
           show: true,
           select: false
-        }
+        };
       }
-    }//初始化
+    } //初始化
     const widthList = new Array(rows).fill(100);
-    const hightList = new Array(columns).fill(100);
+    const heightList = new Array(columns).fill(100);
     return {
-      rows,//列数
-      columns,//行数
-      list,//内容
-      widthList,//每列宽
-      hightList,//每行高
-      select: []//选中的列表
+      rows, //列数
+      columns, //行数
+      list, //内容
+      widthList, //每列宽
+      heightList, //每行高
+      select: [] //选中的列表
     };
   },
-  computed:{
-    canMerge(){
-      if(this.select.length > 1) {
-        return !(this.select[0].show && this.select[this.select.length - 1].show);
-      } 
+  computed: {
+    canMerge() {
+      if (this.select.length > 1) {
+        return !(
+          this.select[0].show && this.select[this.select.length - 1].show
+        ); //有些情况不太对
+      }
       return 0;
-    },
-    columnWidth(){//自动生成 css下面一个样
-      let str = '';
-      for (const iterator of this.widthList) {
-        str += `${iterator}px `
-      }
-      return str;
-    },
-    rowHight(){
-      let str = '';
-      for (const iterator of this.hightList) {
-        str += `${iterator}px `
-      }
-      return str;
     }
   },
-  created(){
-    this.startIndex = 0;//选中的起始位置
-    this.mergeData = {};//选中后需要合并的数据，
+  created() {
+    this.startIndex = 0; //选中的起始位置
+    this.mergeData = {}; //选中后需要合并的数据，
+    console.log(this);
   },
   methods: {
     down(index) {
@@ -93,46 +90,72 @@ export default {
         iterator.select = false;
       }
       this.select = [];
-      const {startIndex} = this;
+      const { startIndex } = this;
       const start = this.list[startIndex];
       const end = this.list[index];
       const minRow = Math.min(start.rowStart, end.rowStart);
       const maxRow = Math.max(start.rowEnd, end.rowEnd);
       const minColumn = Math.min(start.columnStart, end.columnStart);
       const maxColumn = Math.max(start.columnEnd, end.columnEnd);
-      // const minIndex = Math.min(startIndex, index); 
-      this.mergeData = {minRow, maxRow, minColumn, maxColumn};// 拿到选中的位置数据
+      // const minIndex = Math.min(startIndex, index);
+      this.mergeData = { minRow, maxRow, minColumn, maxColumn }; // 拿到选中的位置数据
       // 给选中的加背景色
-      for(let i = minRow - 1; i < maxRow - 1; i++ ){
-        for(let j = minColumn - 1; j < maxColumn - 1; j++){
-          this.list[j + i*this.rows].select = true;
-          this.select.push(this.list[j + i* this.rows]);
+      for (let i = minRow - 1; i < maxRow - 1; i++) {
+        for (let j = minColumn - 1; j < maxColumn - 1; j++) {
+          this.list[j + i * this.rows].select = true;
+          this.select.push(this.list[j + i * this.rows]);
         }
       }
-      
     },
-    merge(){// 除了第一个其他的都不显示了，用show 考虑拆分的情况，就是还原...
-      const {select, mergeData} = this;
+    merge() {
+      // 除了第一个其他的都不显示了，用show 考虑拆分的情况，就是还原...
+      const { select, mergeData } = this;
       for (const iterator of select) {
         iterator.select = false;
         iterator.show = false;
       }
       select[0].show = true;
       select[0].rowStart = mergeData.minRow;
-      select[0].columnStart = mergeData.minColumn ;
+      select[0].columnStart = mergeData.minColumn;
       select[0].rowEnd = mergeData.maxRow;
       select[0].columnEnd = mergeData.maxColumn;
     },
-    resize(index){//拖动改变宽高还没写，把获取的宽度替换下面的就可以了 高度的同样
-      console.log(this.mergeData);
-      index;
-      const {minColumn, maxColumn} = this. mergeData;
-      const width = 300 / (maxColumn - minColumn);//
-      for(let i = minColumn - 1; i < maxColumn - 1; ++i) {
-        this.$set(this.widthList, i, width);
+    moveDown(e, row, column, state) {// 有很多换名字的骚操作可以节约大量if重复代码
+      const index = row - 1 + (column - 1) * this.rows;
+      const startY = e[`client${state == "row" ? "Y" : "X"}`];
+      const { [`${state}Start`]: start, [`${state}End`]: end } = this.list[
+        index
+      ];
+      let mergeWidth = 0;
+      for (let i = start - 1; i < end - 1; ++i) {
+        mergeWidth += this[`${state == "row" ? "height" : "width"}List`][i];
       }
+      const listener = event => {
+        const offset = event[`client${state == "row" ? "Y" : "X"}`] - startY;
+        const width = (mergeWidth + offset) / (end - start);
+        for (let i = start - 1; i < end - 1; ++i) {
+          //this.$set(this.widthList, i, width);//响应式不即时
+          this[`${state == "row" ? "height" : "width"}List`][i] = width;
+        }
+        this.resize(state == "row" ? "height" : "width");
+      };
+      document.body.addEventListener("mousemove", listener);
+      document.body.addEventListener("mouseup", () => {
+        document.body.removeEventListener("mousemove", listener);
+      });
     },
-    addColumn(){//添加行，比较简单
+    resize(e) {
+      //拖动改变宽高还没写，把获取的宽度替换下面的就可以了 高度的同样
+      let str = "";
+      for (const iterator of this[`${e}List`]) {
+        str += `${iterator}px `;
+      }
+      this.$refs.grid.style[
+        `gridTemplate${e == "width" ? "Columns" : "Rows"}`
+      ] = str;
+    },
+    addColumn() {
+      //添加行，比较简单
       const j = this.columns;
       this.columns++;
       for (let i = 0; i < this.rows; i++) {
@@ -143,13 +166,12 @@ export default {
           columnEnd: i + 2,
           show: true,
           select: false
-        })
+        });
       }
-      console.log(this.list);
-      this.hightList.push(100);
+      this.heightList.push(100);
+      this.resize("height");
     },
-    addRow(){
-      
+    addRow() {
       let s = 0;
       // const arr = [1,2,3,5,6,7,9,10,11];
       // for(let i = 1; i <= 3; ++i){//原理参考这个
@@ -160,7 +182,7 @@ export default {
       const i = this.rows;
       this.rows++;
       for (let j = 1; j <= this.columns; j++) {
-        console.log(j*i+s, j*i+s+1);
+        console.log(j * i + s, j * i + s + 1);
         this.list.splice(j * i + s, 0, {
           rowStart: j,
           rowEnd: j + 1,
@@ -172,6 +194,7 @@ export default {
         s++;
       }
       this.widthList.push(100);
+      this.resize("width");
     }
   }
 };
@@ -181,21 +204,50 @@ export default {
 .grid {
   user-select: none;
   display: grid;
-  border-top: 1px solid red;
-  
+  border: 1px solid red;
+  padding: {
+    left: 8px;
+    top: 8px;
+  }
   > div {
-    &.select{
-      background-color: #f37b1d;
-    }
+    position: relative;
     box-sizing: border-box;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 0px solid red;
     border: {
       right-width: 1px;
       bottom-width: 1px;
     }
+    padding: {
+      bottom: 8px;
+      right: 8px;
+    }
+  }
+  .content {
+    border: 1px solid;
+    width: 100%;
+    height: 100%;
+    &.select {
+      background-color: #f37b1d;
+      position: relative;
+    }
+  }
+  [class*="-handle"] {
+    position: absolute;
+    background-color: violet;
+  }
+  .right-handle {
+    right: 0px;
+    height: 100%;
+    width: 8px;
+    cursor: col-resize;
+  }
+  .bottom-handle {
+    bottom: 0px;
+    width: 100%;
+    height: 8px;
+    cursor: row-resize;
   }
 }
 </style>
