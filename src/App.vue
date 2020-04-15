@@ -1,7 +1,10 @@
 <template>
   <div id="app">
-    <router-link to="/">home</router-link> 
-    <router-link to="/douya">dy</router-link> 
+    <nav>
+      <router-link to="/">home</router-link> 
+      <router-link to="/douya">dy</router-link> 
+      <router-link to="/about">about</router-link> 
+    </nav>
     <router-view/>
   </div>
 </template>
@@ -13,8 +16,16 @@
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
   color: #2c3e50;
+  
 }
-
+nav{
+  a{
+    padding: 30px;
+  }
+}
+body{
+  margin: 0;
+}
 #nav {
   padding: 30px;
 

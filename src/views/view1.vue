@@ -8,7 +8,9 @@
     <div
       class="grid"
       style="grid-template-columns: 100px 100px 100px 100px 100px;
-    grid-template-rows: 100px 100px;"
+    grid-template-rows: 100px 100px;
+      grid-columns: 100px 100px 100px 100px 100px;
+    grid-rows: 100px 100px;"
       ref="grid"
     >
       <template v-for="column in columns">
@@ -21,6 +23,10 @@
           :style="{
             gridRow: `${list[(row - 1) + (column-1) * rows].rowStart} / ${list[(row - 1) + (column-1) * rows].rowEnd}`,
             gridColumn: `${list[(row - 1) + (column-1) * rows].columnStart} / ${list[(row - 1) + (column-1) * rows].columnEnd}`,
+            'grid-row': `${list[(row - 1) + (column-1) * rows].rowStart}`,
+            'grid-row-span': `${list[(row - 1) + (column-1) * rows].rowEnd - list[(row - 1) + (column-1) * rows].rowStart}`,
+            'grid-column': `${list[(row - 1) + (column-1) * rows].columnStart}`,
+            'grid-column-span': ` ${list[(row - 1) + (column-1) * rows].columnEnd - list[(row - 1) + (column-1) * rows].columnStart}`,
           }"
         >
           <div
@@ -71,24 +77,19 @@ export default {
   },
   computed: {
     canMerge() {
-      if(this.select.length > 1){
-        console.log('2f');
-        const [first] = this.select;//
+      if (this.select.length > 1) {
+        console.log("2f");
+        const [first] = this.select; //
         const last = this.select[this.select.length - 1];
         let count = 0;
         for (const iterator of this.select) {
           const row = iterator.rowEnd - iterator.rowStart;
           const column = iterator.columnEnd - iterator.columnStart;
-          if(iterator.show){
-            console.log(row, column);
-            if(column + row > 2){
-              count += column * row;
-            }else{
-              count++;
-            }
+          if (iterator.show) {
+            count += column * row;
           }
         }
-        console.log('count', count);
+        console.log("count", count);
         return !(count == this.select.length);
       }
       return true;
@@ -110,7 +111,7 @@ export default {
       }
       this.select = [];
       const { startIndex } = this;
-      if(index === startIndex){
+      if (index === startIndex) {
         return;
       }
       const start = this.list[startIndex];
@@ -131,7 +132,7 @@ export default {
       }
     },
     merge() {
-      console.log('合并')
+      console.log("合并");
       // 除了第一个其他的都不显示了，用show 考虑拆分的情况，就是还原...
       const { select, mergeData } = this;
       for (const iterator of select) {
@@ -144,7 +145,8 @@ export default {
       select[0].rowEnd = mergeData.maxRow;
       select[0].columnEnd = mergeData.maxColumn;
     },
-    moveDown(e, row, column, state) {// 有很多换名字的骚操作可以节约大量if重复代码
+    moveDown(e, row, column, state) {
+      // 有很多换名字的骚操作可以节约大量if重复代码
       const index = row - 1 + (column - 1) * this.rows;
       const startY = e[`client${state == "row" ? "Y" : "X"}`];
       const { [`${state}Start`]: start, [`${state}End`]: end } = this.list[
@@ -158,7 +160,7 @@ export default {
       const listener = event => {
         const offset = event[`client${state == "row" ? "Y" : "X"}`] - startY;
         let width = (mergeWidth + offset) / (end - start);
-        if(width < 30){
+        if (width < 30) {
           width = 30;
         }
         for (let i = start - 1; i < end - 1; ++i) {
@@ -178,9 +180,13 @@ export default {
       for (const iterator of this[`${e}List`]) {
         str += `${iterator}px `;
       }
-      this.$refs.grid.style[
+      if (window.ActiveXObject || "ActiveXObject" in window) {
+        this.$refs.grid.style[`msGrid${e == "width" ? "Columns" : "Rows"}`] = str;
+      } else {
+        this.$refs.grid.style[
         `gridTemplate${e == "width" ? "Columns" : "Rows"}`
       ] = str;
+      }
     },
     addColumn() {
       //添加行，比较简单
@@ -232,6 +238,7 @@ export default {
 .grid {
   user-select: none;
   display: grid;
+  display: -ms-grid;
   border: 1px solid red;
   padding: {
     left: 8px;
@@ -269,10 +276,12 @@ export default {
     right: 0px;
     height: 100%;
     width: 8px;
+    top: 0px;
     cursor: col-resize;
   }
   .bottom-handle {
     bottom: 0px;
+    left: 0px;
     width: 100%;
     height: 8px;
     cursor: row-resize;
